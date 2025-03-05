@@ -1,7 +1,7 @@
 -- pitchcontrol.lua
 --
--- Version: 0.2.0
--- URL: https://github.com/FichteFoll/mpv-scripts
+-- Version: 0.2.0-gamernoob24
+-- URL: https://github.com/gamernoob24/pitchchanger
 -- License: ISC
 
 -- Commands for key bindings:
@@ -10,8 +10,6 @@
 --     Increase pitch by one half-tone. Bound to Ctrl+].
 -- * script-message-to pitchcontrol decrease
 --     Increase pitch by one half-tone. Bound to Ctrl+[.
--- * script-message-to pitchcontrol reset
---     Increase pitch by one half-tone. Bound to Ctrl+ENTER.
 -- * script-message-to pitchcontrol toggle
 --     Toggle pitching.
 -- * script-message-to pitchcontrol set_halftone_pitch <number>
@@ -33,54 +31,60 @@
 -- IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-utils = require 'mp.utils'
-msg = require('mp.msg')
-options = require('mp.options')
-script_name = mp.get_script_name() -- "pitchcontrol"
+ utils = require 'mp.utils'
+ msg = require('mp.msg')
+ options = require('mp.options')
+ script_name = mp.get_script_name() -- "pitchcontrol"
 
 
-RUBBERBAND_LABEL = string.format("rb", script_name)
+ RUBBERBAND_LABEL = string.format("rb", script_name)
 
-current_pitch = 0
-active = true
-
+ current_pitch = 0
+ active = false
 
 function set_halftone_pitch(pitch, activate)
-   if activate == nil then
-       activate = true
-   end
-   pitch = tonumber(pitch)
-    pitch_scale = pitch /100 +1
-   
-   if active then
-       mp.commandv('af-command', RUBBERBAND_LABEL, 'set-pitch', pitch_scale)
-       active = true
-   else
-       mp.osd_message(("'%s' is inactive"):format(script_name))
-       return
-   end
+    if activate == nil then
+        activate = true
+    end
+    pitch = tonumber(pitch)
+     pitch_scale = pitch /100 +1
 
-   current_pitch = pitch
+    if active == false then
+        mp.command('af add @rb:rubberband')
+        active = true
+        end
 
-   -- output new pitch
-   mp.osd_message(("Pitch: %+d"):format(pitch))
+    if active then
+        mp.commandv('af-command', RUBBERBAND_LABEL, 'set-pitch', pitch_scale)
+        active = true
+    else
+        mp.osd_message(("'%s' is inactive"):format(script_name))
+        return
+    end
+
+    current_pitch = pitch
+
+    -- output new pitch
+    mp.osd_message(("Pitch: %+d"):format(pitch))
 end
 
 
 function increase_handler()
-   set_halftone_pitch(current_pitch + 1, false)
+    set_halftone_pitch(current_pitch + 1, false)
 end
 
 
 function decrease_handler()
-   set_halftone_pitch(current_pitch - 1, false)
+    set_halftone_pitch(current_pitch - 1, false)
 end
 
 function reset_handler()
-   set_halftone_pitch(0, false)
+    set_halftone_pitch(0, false)
+    mp.command('af remove @rb')
+    active = false
 end
 
-mp.add_key_binding("Ctrl+[", 'increase', decrease_handler)
-mp.add_key_binding("Ctrl+]", 'decrease', increase_handler)
+mp.add_key_binding("Ctrl+[", 'increase', decrease_handler, { repeatable = true })
+mp.add_key_binding("Ctrl+]", 'decrease', increase_handler, { repeatable = true })
 mp.add_key_binding("Ctrl+ENTER", 'reset', reset_handler)
 mp.register_script_message('set_halftone_pitch', set_halftone_pitch)
